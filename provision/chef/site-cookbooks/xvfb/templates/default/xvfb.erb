@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# chkconfig: 345 98 20
+# description: Starts and stops XVfb.
+
+# Source function library.
+. /etc/init.d/functions
+
+SERVICE="Xvfb"
+RETVAL=0
+
+XVFB=/usr/bin/Xvfb
+
+DISPLAY_NUM=<%= @display_num %>
+SCREEN_W=<%= @screen_w %>
+SCREEN_H=<%= @screen_h %>
+SCREEN_BIT=<%= @screen_bit %>
+
+LOG_DIR=/var/log/xvfb.log
+LOCK_FILE=/var/lock/subsys/${SERVICE}_${DISPLAY_NUM}
+
+start() {
+    if [ -f $LOCK_FILE ]; then
+      rh_status
+      RETVAL=$?
+    else
+      echo -n "Starting ${SERVICE}: "
+      daemon ${XVFB} :${DISPLAY_NUM} -screen 0 ${SCREEN_W}x${SCREEN_H}x${SCREEN_BIT} > ${LOG_DIR} 2>&1 &
+      RETVAL=$?
+      [ $RETVAL = 0 ] && echo_success && touch $LOCK_FILE
+      echo
+    fi
+    return $RETVAL
+}
+
+stop() {
+    echo -n "Stopping ${SERVICE}: "
+    killproc ${SERVICE}
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f $LOCK_FILE
+    return $RETVAL
+}
+
+rh_status() {
+    status $SERVICE
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        rh_status
+        ;;
+  restart|reload)
+        stop
+        start $SERVICE
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        RETVAL=1
+esac
+
+exit ${RETVAL}

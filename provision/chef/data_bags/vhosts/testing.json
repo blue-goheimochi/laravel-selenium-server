@@ -1,0 +1,9 @@
+{
+  "id":"testing",
+  "domain":"testing.laravel-selenium.loc",
+  "doc_root":"public",
+  "envs": {
+    "APP_ENV":"testing",
+    "SQLITE_FILE_NAME":"testing.sqlite"
+  }
+}

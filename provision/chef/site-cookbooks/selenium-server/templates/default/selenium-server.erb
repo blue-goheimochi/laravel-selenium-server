@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# chkconfig: 345 98 20
+# description: Starts and stops Selenium Server.
+
+# Source function library.
+. /etc/init.d/functions
+
+SERVICE="selenium-server"
+RETVAL=0
+
+JAVA=/usr/bin/java
+
+JAR_FILE=<%= @jar_file %>
+PORT=<%= @port %>
+
+PID_FILE=/var/run/${SERVICE}_${PORT}.pid
+LOG_DIR=/var/log/${SERVICE}_${PORT}.log
+LOCK_FILE=/var/lock/subsys/${SERVICE}_${PORT}
+
+start() {
+    if [ -f $LOCK_FILE ]; then
+      rh_status
+      RETVAL=$?
+    else
+      echo -n "Starting ${SERVICE}: "
+      export DISPLAY=":99"
+      ${JAVA} -jar ${JAR_FILE} -port ${PORT} > ${LOG_DIR} 2>&1 &
+      RETVAL=$?
+      PID=$!
+      echo $PID > $PID_FILE
+      [ $RETVAL = 0 ] && echo_success && touch $LOCK_FILE
+      echo
+    fi
+    return $RETVAL
+}
+
+stop() {
+    if [ ! -f $PID_FILE -a ! -f $LOCK_FILE ]; then
+        rh_status
+    else
+        echo -n "Stopping ${SERVICE}: "
+        rm -f $PID_FILE
+        rm -f $LOCK_FILE
+        echo_success
+        echo
+    fi
+}
+
+rh_status() {
+    if [ -f $PID_FILE ]; then
+        PID=`cat $PID_FILE`
+        echo "${SERVICE} (pid ${PID}) is running..."
+    else
+        echo "${SERVICE} is stopped"
+    fi
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        rh_status
+        ;;
+  restart|reload)
+        stop
+        start $SERVICE
+        ;;
+  stop)
+        stop
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        RETVAL=1
+esac
+
+exit ${RETVAL}
